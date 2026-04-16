@@ -1,0 +1,6 @@
+15	draw_SZ_A_15
+16	draw_SZ_A_16
+33	draw_SZ_A_33
+34	draw_SZ_A_34
+05	draw_SD_A_05
+23	draw_SD_A_23

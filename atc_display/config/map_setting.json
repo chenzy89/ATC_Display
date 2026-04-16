@@ -1,0 +1,8 @@
+{
+  "scale": 188,
+  "center_lat": 22.3302848747725,
+  "center_lon": 113.689764264606,
+  "magnetic_variation": 2,
+  "map_data_dir": "mapData",
+  "map_files": ["draw_BACKGROUND", "draw_BORDER", "draw_SZ_A_15"]
+}

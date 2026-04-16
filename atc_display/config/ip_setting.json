@@ -1,0 +1,7 @@
+{
+  "multicast_ip": "228.28.28.28",
+  "multicast_port": 8107,
+  "wx_port": 8009,
+  "bind_host": "",
+  "interface_ip": "172.50.100.76"
+}

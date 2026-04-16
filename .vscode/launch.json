@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "运行 ATC Display",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/atc_display/__main__.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "justMyCode": true,
+            "preLaunchTask": null,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "模块方式运行 ATC Display",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "atc_display",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "justMyCode": true
+        }
+    ]
+}

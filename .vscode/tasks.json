@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "安装依赖",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/pip install -e .",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "运行 ATC Display",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/python -m atc_display",
+            "problemMatcher": [],
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+}
