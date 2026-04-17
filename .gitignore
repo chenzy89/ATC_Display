@@ -5,3 +5,4 @@ __pycache__/
 .pytest_cache/
 debug.log
 *.log
+=6.6.0
