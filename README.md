@@ -176,5 +176,5 @@ ATC_Display/
 
 CAT062 解码逻辑参考了以下项目：
 
-- C# `CAT062.cs` 原型实现
+- 珠海CZY C# `CAT062.cs` 原型实现
 - `atc_data_hub/parsers/cat062.py` — Python 参考实现
