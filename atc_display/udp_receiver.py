@@ -56,13 +56,16 @@ def create_multicast_receiver(
             raise OSError(f"Failed to bind to {bind_host}:{multicast_port} or all interfaces: {bind_exc}") from bind_exc
 
     if multicast_ip:
-        membership = struct.pack(
-            "=4s4s",
-            socket.inet_aton(multicast_ip),
-            socket.inet_aton(interface_ip or "0.0.0.0"),
-        )
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership)
-        logger.info("已加入组播组 %s:%d (网卡: %s)", multicast_ip, multicast_port, interface_ip or "0.0.0.0")
+        try:
+            membership = struct.pack(
+                "=4s4s",
+                socket.inet_aton(multicast_ip),
+                socket.inet_aton(interface_ip or "0.0.0.0"),
+            )
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership)
+            logger.info("已加入组播组 %s:%d (网卡: %s)", multicast_ip, multicast_port, interface_ip or "0.0.0.0")
+        except OSError as exc:
+            logger.warning("无法加入组播组 %s:%d (网卡: %s): %s, 继续运行但不接收组播数据", multicast_ip, multicast_port, interface_ip or "0.0.0.0", exc)
 
     sock.setblocking(False)
     return sock
