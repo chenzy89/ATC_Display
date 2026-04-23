@@ -22,7 +22,7 @@ from PySide6.QtGui import QImage, QPixmap, QPainter, QColor
 logger = logging.getLogger("atc_display.wx_map")
 
 # ── 常量 ──
-WX_ANCHOR_LAT = 26.0 + 36.0 / 60 + 19.35 / 3600   # N26°36'19.35"
+WX_ANCHOR_LAT = 26.0 + 16.0 / 60 + 19.35 / 3600   # N26°16'19.35"
 WX_ANCHOR_LON = 103.0 + 58.0 / 60 + 31.0 / 3600    # E103°58'31"
 WX_COVERAGE_METERS = 10_000_000                      # 覆盖宽度 (米)
 WX_ASPECT_RATIO = 0.85                               # 宽高比 (85/100)
