@@ -230,7 +230,39 @@ def main() -> None:
         logger.info("预计线 %s, 预计时间: %d 分钟", "已启用" if checked else "已禁用", predict_time)
 
     giw.btn_vel.toggled.connect(on_vel_button_toggled)
-    
+
+    # ── GIW WX 按钮: 控制云图显示 ──
+    def on_wx_button_toggled(checked):
+        """WX 按钮切换: 切换云图显示"""
+        asd.set_wx_visible(checked)
+        giw._style_toggle_btn(giw.btn_wx, active=checked)
+        logger.info("云图显示 %s", "已启用" if checked else "已禁用")
+
+    giw.btn_wx.toggled.connect(on_wx_button_toggled)
+
+    # ── GIW FILTER 按钮: 控制航班高度标牌过滤
+    def on_filter_button_toggled(checked):
+        """FILTER 按钮切换: 启用/禁用高度过滤"""
+        min_alt = giw.get_filter_min_m()
+        max_alt = giw.get_filter_max_m()
+        asd.set_label_filter_bounds(min_alt, max_alt)
+        asd.set_label_filter_enabled(checked)
+        giw._style_toggle_btn(giw.btn_filter, active=checked)
+        logger.info("高度过滤 %s, 范围: %d-%d 米", "已启用" if checked else "已禁用", min_alt, max_alt)
+
+    giw.btn_filter.toggled.connect(on_filter_button_toggled)
+
+    # ── GIW FILTER 输入框: 当输入框内容改变时更新高度过滤范围
+    def on_filter_range_changed():
+        if giw.is_filter_enabled():
+            min_alt = giw.get_filter_min_m()
+            max_alt = giw.get_filter_max_m()
+            asd.set_label_filter_bounds(min_alt, max_alt)
+            logger.debug("高度过滤范围已更新: %d-%d 米", min_alt, max_alt)
+
+    giw.tbx_filter_min.textChanged.connect(on_filter_range_changed)
+    giw.tbx_filter_max.textChanged.connect(on_filter_range_changed)
+
     # ── GIW VEL 输入框: 当输入框内容改变时更新预计时间 ──
     def on_vel_time_changed():
         """VEL 时间输入框变化: 更新预计时间"""

@@ -10,24 +10,24 @@
 源图裁剪区域: 1000x850, 宽高比 100:85
 """
 from __future__ import annotations
-
+from .geometry import RealPoint, GeoTransform
 import logging
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, QTimer, Signal, Qt
 from PySide6.QtGui import QImage, QPixmap, QPainter, QColor
 
 logger = logging.getLogger("atc_display.wx_map")
 
 # ── 常量 ──
-WX_ANCHOR_LAT = 26.0 + 16.0 / 60 + 19.35 / 3600   # N26°16'19.35"
-WX_ANCHOR_LON = 103.0 + 58.0 / 60 + 31.0 / 3600    # E103°58'31"
+WX_ANCHOR_LAT = 26.0 + 36.0 / 60 + 19.35 / 3600   # N26°36'19.35"
+WX_ANCHOR_LON = 103.0 + 51.0 / 60 + 31.0 / 3600    # E103°58'31"
 WX_COVERAGE_METERS = 10_000_000                      # 覆盖宽度 (米)
-WX_ASPECT_RATIO = 0.85                               # 宽高比 (85/100)
-WX_SRC_W = 1000                                      # 源图裁剪宽度
-WX_SRC_H = 850                                       # 源图裁剪高度
+WX_ASPECT_RATIO = 0.955                            # 宽高比 (955/100)
+WX_REFRESH_INTERVAL_MS = 6 * 60 * 1000              # 自动检查云图更新间隔 (6 分钟)
 
 # 地球参数 (与 geometry.py 保持一致)
 EARTH_RADIUS = 6371000  # 地球半径 (米)
@@ -40,11 +40,18 @@ class WXMapManager(QObject):
     # 新云图加载成功后发出, 由主线程连接到 ASD 标记 _bg_dirty
     wx_updated = Signal()
 
-    def __init__(self, wx_base_path: str = "/mnt/WXMap", parent=None):
+    def __init__(self, wx_base_path: Optional[str] = None, parent=None):
         super().__init__(parent)
+        if wx_base_path is None:
+            wx_base_path = "X:\\" if sys.platform.startswith("win") else "/mnt/WXMap"
         self._base_path = Path(wx_base_path)
         self._pixmap: Optional[QPixmap] = None
         self._current_name: str = ""
+
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(WX_REFRESH_INTERVAL_MS)
+        self._refresh_timer.timeout.connect(self._refresh_latest)
+        self._refresh_timer.start()
 
     @property
     def pixmap(self) -> Optional[QPixmap]:
@@ -64,24 +71,48 @@ class WXMapManager(QObject):
         启动时查找最新云图:
         扫描当日云图目录 {base_path}\\{MMdd}\\，按文件名排序取最新的 HHmm.PNG
         """
+        latest_name = self._find_latest_name()
+        if not latest_name:
+            return False
+        return self.load_png(latest_name)
+
+    def _find_latest_name(self) -> Optional[str]:
         today = datetime.now()
         dir_name = today.strftime("%m%d")  # MMdd
         wx_dir = self._base_path / dir_name
 
         if not wx_dir.exists():
-            logger.warning("云图目录不存在: %s", wx_dir)
-            return False
+            logger.debug("云图目录不存在: %s", wx_dir)
+            return None
 
-        # 查找所有 .PNG 文件，按文件名排序取最新
         png_files = sorted(wx_dir.glob("*.PNG"))
         if not png_files:
-            logger.warning("当日云图目录无 PNG 文件: %s", wx_dir)
+            logger.debug("当日云图目录无 PNG 文件: %s", wx_dir)
+            return None
+
+        latest_file = png_files[-1]
+        return dir_name + latest_file.stem
+
+    def check_for_update(self) -> bool:
+        """
+        检查当前是否存在比已加载云图更新的最新文件.
+        如果有更新则加载并返回 True。
+        """
+        latest_name = self._find_latest_name()
+        if not latest_name or latest_name == self._current_name:
             return False
 
-        latest_file = png_files[-1]  # 文件名排序后最后一个即最新
-        name = dir_name + latest_file.stem  # MMdd + HHmm
+        if self.load_png(latest_name):
+            self.wx_updated.emit()
+            return True
+        return False
 
-        return self.load_png(name)
+    def _refresh_latest(self) -> None:
+        try:
+            if self.check_for_update():
+                logger.info("检测到新的云图并已刷新: %s", self._current_name)
+        except Exception as exc:
+            logger.error("自动检查云图更新失败: %s", exc)
 
     # ── 按名加载 (LoadWXPNG) ──
     def load_png(self, name: str) -> bool:

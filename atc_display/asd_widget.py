@@ -235,6 +235,12 @@ class ASDWidget(QWidget):
         # === 预计线 ===
         self.predict_line_enabled = False  # 全局预计线显示开关
         self.predict_time_minutes = 1      # 预计时间，单位分钟
+        self.wx_visible = True             # 云图显示开关
+
+        # === 高度过滤 ===
+        self.label_filter_enabled = False
+        self.label_filter_min_m = 0
+        self.label_filter_max_m = 10000
         
         # === 标牌点击检测 ===
         # 记录标牌第二行速度字段的点击区域: {track_number: (x, y, width, height)}
@@ -294,6 +300,12 @@ class ASDWidget(QWidget):
         """标记背景为失效, 下次渲染时将重新绘制"""
         self._bg_dirty = True
 
+    def set_wx_visible(self, visible: bool) -> None:
+        """设置云图显示开关"""
+        self.wx_visible = visible
+        self._bg_dirty = True
+        self.update()
+
     def start_receive(self) -> None:
         """启动 CAT062 数据接收"""
         net = self.config.network
@@ -336,6 +348,25 @@ class ASDWidget(QWidget):
         if minutes > 0:
             self.predict_time_minutes = minutes
             self.update()
+
+    def set_label_filter_enabled(self, enabled: bool) -> None:
+        """设置高度过滤开关"""
+        self.label_filter_enabled = enabled
+        self.update()
+
+    def set_label_filter_bounds(self, min_m: int, max_m: int) -> None:
+        """设置高度过滤边界（米）"""
+        self.label_filter_min_m = min(min_m, max_m)
+        self.label_filter_max_m = max(min_m, max_m)
+        self.update()
+
+    def _is_track_within_label_filter(self, track: RadarTrack) -> bool:
+        if not self.label_filter_enabled:
+            return True
+        height_m = track.flight_level_m or track.qnh_height_m
+        if height_m <= 0:
+            return False
+        return self.label_filter_min_m <= height_m <= self.label_filter_max_m
 
     def toggle_track_predict_line(self, track: RadarTrack) -> None:
         """切换单个航迹的预计线显示状态"""
@@ -615,7 +646,7 @@ class ASDWidget(QWidget):
             self._draw_map_element(painter, elem)
 
         # ── 云图 (Weather Map) ──
-        if self._wx_map:
+        if self._wx_map and self.wx_visible:
             self._wx_map.draw(painter, self.geo)
 
         painter.end()
@@ -1066,6 +1097,14 @@ class ASDWidget(QWidget):
             track_color = COLOR_UNCONTROLLED
         else:
             track_color = COLOR_ASSUMED
+
+        # 如果高度过滤打开且当前航迹不在范围内, 只画中心圆
+        if self.label_filter_enabled and not self._is_track_within_label_filter(track):
+            r, g, b = track_color
+            painter.setBrush(QColor(r, g, b))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(QPointF(px, py), 6, 6)
+            return
 
         # 绘制历史航迹点
         self._draw_trail(painter, track, track_color)

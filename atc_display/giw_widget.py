@@ -188,6 +188,14 @@ class GIWWidget(QWidget):
         hist_row_layout.addWidget(self.btn_hist)
         hist_row_layout.addWidget(self.tbx_hist)
 
+        # WX 按钮
+        self.btn_wx = QPushButton("WX")
+        self.btn_wx.setCheckable(True)
+        self.btn_wx.setChecked(True)
+        self.btn_wx.setFont(self.font_btn)
+        self.btn_wx.setFixedSize(75, 20)
+        self._style_toggle_btn(self.btn_wx, active=True)
+
         # AL 按钮
         self.btn_al = QPushButton("AL")
         self.btn_al.setCheckable(True)
@@ -202,12 +210,32 @@ class GIWWidget(QWidget):
         self.btn_audio.setFixedSize(75, 20)
         self._style_toggle_btn(self.btn_audio, active=False)
 
-        # CH 按钮
-        self.btn_channel = QPushButton("CH")
-        self.btn_channel.setCheckable(True)
-        self.btn_channel.setFont(self.font_btn)
-        self.btn_channel.setFixedSize(75, 20)
-        self._style_toggle_btn(self.btn_channel, active=False)
+        # FILTER 按钮 + 高度范围输入
+        self.btn_filter = QPushButton("FILTER")
+        self.btn_filter.setCheckable(True)
+        self.btn_filter.setFont(self.font_btn)
+        self.btn_filter.setFixedSize(75, 20)
+        self._style_toggle_btn(self.btn_filter, active=False)
+
+        self.tbx_filter_min = QLineEdit("0")
+        self.tbx_filter_min.setFixedWidth(60)
+        self.tbx_filter_min.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.tbx_filter_min.setFont(self.font_btn)
+        self.tbx_filter_min.setPlaceholderText("下限")
+
+        self.tbx_filter_max = QLineEdit("10000")
+        self.tbx_filter_max.setFixedWidth(60)
+        self.tbx_filter_max.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.tbx_filter_max.setFont(self.font_btn)
+        self.tbx_filter_max.setPlaceholderText("上限")
+
+        filter_widget = QWidget()
+        filter_layout = QHBoxLayout(filter_widget)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
+        filter_layout.setSpacing(3)
+        filter_layout.addWidget(self.tbx_filter_min)
+        filter_layout.addWidget(self.btn_filter)
+        filter_layout.addWidget(self.tbx_filter_max)
 
         # 排列按钮 (每列两个: 按钮在上, 输入框在下)
         col_vel_widget = QWidget()
@@ -224,13 +252,31 @@ class GIWWidget(QWidget):
         col_hist_layout.addWidget(self.btn_hist)
         col_hist_layout.addWidget(self.tbx_hist)
 
-        # 右侧按钮列 (AL, AUDIO)
+        col_wx_widget = QWidget()
+        col_wx_layout = QVBoxLayout(col_wx_widget)
+        col_wx_layout.setContentsMargins(0, 0, 0, 0)
+        col_wx_layout.setSpacing(2)
+        col_wx_layout.addWidget(self.btn_wx)
+        spacer_label_wx = QLabel("")
+        spacer_label_wx.setFixedHeight(20)
+        col_wx_layout.addWidget(spacer_label_wx)
+
+        # 右侧按钮列 (AL)
         col_right_widget = QWidget()
         col_right_layout = QVBoxLayout(col_right_widget)
         col_right_layout.setContentsMargins(0, 0, 0, 0)
         col_right_layout.setSpacing(2)
         col_right_layout.addWidget(self.btn_al)
-        col_right_layout.addWidget(self.btn_channel)
+        spacer_label_al = QLabel("")
+        spacer_label_al.setFixedHeight(20)
+        col_right_layout.addWidget(spacer_label_al)
+
+        # FILTER 按钮列
+        col_filter_widget = QWidget()
+        col_filter_layout = QVBoxLayout(col_filter_widget)
+        col_filter_layout.setContentsMargins(0, 0, 0, 0)
+        col_filter_layout.setSpacing(2)
+        col_filter_layout.addWidget(filter_widget)
 
         col_audio_widget = QWidget()
         col_audio_layout = QVBoxLayout(col_audio_widget)
@@ -244,7 +290,9 @@ class GIWWidget(QWidget):
 
         btn_layout.addWidget(col_vel_widget)
         btn_layout.addWidget(col_hist_widget)
+        btn_layout.addWidget(col_wx_widget)
         btn_layout.addWidget(col_right_widget)
+        btn_layout.addWidget(col_filter_widget)
         btn_layout.addWidget(col_audio_widget)
 
         layout.addWidget(btn_area)
@@ -322,6 +370,28 @@ class GIWWidget(QWidget):
     def is_predict_line_enabled(self) -> bool:
         """获取预计线开关状态（VEL 按钮是否被按下）"""
         return getattr(self.btn_vel, 'isChecked', lambda: False)()
+
+    def is_wx_enabled(self) -> bool:
+        """获取云图显示开关状态（WX 按钮是否被按下）"""
+        return getattr(self.btn_wx, 'isChecked', lambda: False)()
+
+    def get_filter_min_m(self) -> int:
+        """获取高度过滤下限（米）"""
+        try:
+            return max(0, int(self.tbx_filter_min.text().strip()))
+        except (ValueError, AttributeError):
+            return 0
+
+    def get_filter_max_m(self) -> int:
+        """获取高度过滤上限（米）"""
+        try:
+            return max(0, int(self.tbx_filter_max.text().strip()))
+        except (ValueError, AttributeError):
+            return 10000
+
+    def is_filter_enabled(self) -> bool:
+        """获取 FILTER 开关状态"""
+        return getattr(self.btn_filter, 'isChecked', lambda: False)()
 
     def resizeEvent(self, event) -> None:
         """窗口大小变化时"""
