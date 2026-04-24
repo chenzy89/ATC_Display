@@ -213,6 +213,7 @@ class GIWWidget(QWidget):
         # FILTER 按钮 + 高度范围输入
         self.btn_filter = QPushButton("FILTER")
         self.btn_filter.setCheckable(True)
+
         self.btn_filter.setFont(self.font_btn)
         self.btn_filter.setFixedSize(75, 20)
         self._style_toggle_btn(self.btn_filter, active=False)
