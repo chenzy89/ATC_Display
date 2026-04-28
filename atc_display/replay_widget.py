@@ -175,7 +175,7 @@ class ReplayWidget(QWidget):
         grp.setFont(QFont("SimSun", 10))
         grp_layout = QHBoxLayout(grp)
         self.rdb_local = QRadioButton("Local")
-        self.rdb_remote = QRadioButton("Remote (/mnt/radar)")
+        self.rdb_remote = QRadioButton("Remote (/mnt/Radar)")
         self.rdb_local.setChecked(True)
         grp_layout.addWidget(self.rdb_local)
         grp_layout.addWidget(self.rdb_remote)
@@ -251,7 +251,7 @@ class ReplayWidget(QWidget):
         # 确定数据路径
         radar_dir = self.engine.radar_dir
         if self.rdb_remote.isChecked():
-            radar_dir = Path.home() / "mnt" / "radar"
+            radar_dir = Path("/") / "mnt" / "Radar"
         else:
             radar_dir = DEFAULT_RADAR_DIR
         self.engine.radar_dir = radar_dir

@@ -642,12 +642,13 @@ class ASDWidget(QWidget):
         painter = QPainter(self.bg_pixmap)
         painter.setRenderHint(QPainter.Antialiasing, True)
 
-        for elem in self.map_elements:
-            self._draw_map_element(painter, elem)
-
         # ── 云图 (Weather Map) ──
         if self._wx_map and self.wx_visible:
             self._wx_map.draw(painter, self.geo)
+
+        # ── 地图  ── 
+        for elem in self.map_elements:
+            self._draw_map_element(painter, elem)
 
         painter.end()
 
@@ -1058,7 +1059,7 @@ class ASDWidget(QWidget):
             r, g, b = get_qcolor(elem.color_index)
             if elem.name and "BACKGROUD" in elem.name.upper():
                 # 背景多边形: 不透明填充, 用背景色
-                painter.setBrush(QColor(r, g, b, 255))
+                painter.setBrush(QColor(r, g, b, 155))
             else:
                 # 普通填充多边形: 半透明
                 painter.setBrush(QColor(r, g, b, 100))
