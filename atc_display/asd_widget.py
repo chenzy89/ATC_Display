@@ -339,8 +339,11 @@ class ASDWidget(QWidget):
 
     # ============== 预计线控制 ==============
     def set_predict_line_enabled(self, enabled: bool) -> None:
-        """设置全局预计线显示开关"""
+        """设置全局预计线显示开关，并同步到相关航迹的 show_predict_line 属性"""
         self.predict_line_enabled = enabled
+        for track in self.track_store.tracks.values():
+            if track.adep.strip() or track.adst.strip():
+                track.show_predict_line = enabled
         self.update()
 
     def set_predict_time(self, minutes: int) -> None:
@@ -557,7 +560,12 @@ class ASDWidget(QWidget):
             logger.debug("新增 %d 条航迹, 当前共 %d 条航迹", new_count, self.track_count)
         else:
             logger.debug("更新 %d 条现有航迹, 当前共 %d 条航迹", len(tracks) - new_count, self.track_count)
-        
+
+        if self.predict_line_enabled:
+            for track in self.track_store.tracks.values():
+                if track.adep.strip() or track.adst.strip():
+                    track.show_predict_line = True
+
         # 更新被拖拽航迹的引用，确保拖拽状态在航迹更新后仍然保持
         if dragging_track_number is not None and dragging_track_number in self.track_store.tracks:
             self._drag_track = self.track_store.tracks[dragging_track_number]
@@ -1117,7 +1125,7 @@ class ASDWidget(QWidget):
         painter.drawEllipse(QPointF(px, py), 6, 6)
 
         # 绘制预计线（根据单航迹的show_predict_line属性，不依赖全局VEL开关）
-        if not is_uncorrelated and getattr(track, 'show_predict_line', False):
+        if  getattr(track, 'show_predict_line', False):
             self._draw_predict_line(painter, track, px, py, track_color)
 
         # 绘制标牌
@@ -1214,8 +1222,14 @@ class ASDWidget(QWidget):
         leader_end_x = px + ox
         leader_end_y = py + oy
 
+        # 到场进港航班才显示跑道号, 第一行增加跑道号
+        runway_label = track.runway.replace("\x00", "").strip()
+        arrival_runway = bool(track.star.strip() and runway_label)
+
         # 标牌左上角位置 (根据偏移方向)
         label_rows = 3 if not is_uncorrelated else 2
+        if arrival_runway:
+            label_rows += 1
         if ox > 0:
             blip_x = leader_end_x
             blip_y = leader_end_y - font_h * label_rows
@@ -1233,13 +1247,18 @@ class ASDWidget(QWidget):
         painter.drawLine(QPointF(px, py), QPointF(leader_end_x, leader_end_y))
 
         # 画标牌内容
-        # 第一行: 航班号 + 尾流
-        painter.drawText(int(blip_x), int(blip_y + font_h), acid)
+        row_index = 0
+        if arrival_runway:
+            painter.drawText(int(blip_x)+fm.horizontalAdvance('C '), int(blip_y + font_h * (row_index + 1)), runway_label)
+            row_index += 1
+
+        # 航班号 + 尾流
+        painter.drawText(int(blip_x), int(blip_y + font_h * (row_index + 1)), acid)
         acid_width = fm.horizontalAdvance(acid)
         if track.wtc:
-            painter.drawText(int(blip_x + acid_width), int(blip_y + font_h), track.wtc)
+            painter.drawText(int(blip_x + acid_width), int(blip_y + font_h * (row_index + 1)), track.wtc)
 
-        y2 = blip_y + font_h
+        y2 = blip_y + font_h * (row_index + 1)
 
         if is_uncorrelated:
             # 未相关: 第二行只显示高度和速度
@@ -1252,9 +1271,10 @@ class ASDWidget(QWidget):
             self._draw_level_indicator(painter, track.level_status, blip_x + fl_width + 1, y2, color)
             spd_x = blip_x + fl_width + 30
             painter.drawText(int(spd_x), int(y2 + font_h), spd_str)
-            # 记录速度字段的点击区域
-            spd_width = fm.horizontalAdvance(spd_str)
-            self._label_clickable_areas[track.track_number] = (spd_x, y2, spd_width, font_h)
+            # 记录速度字段的点击区域，使用文本实际边界避免行基线偏移问题
+            spd_rect = fm.boundingRect(spd_str)
+            spd_y = y2 + font_h + spd_rect.top()
+            self._label_clickable_areas[track.track_number] = (spd_x, spd_y, spd_rect.width(), spd_rect.height())
         else:
             # 已相关: 完整标牌
             # 第二行: 高度 + CFL + 速度
@@ -1270,9 +1290,10 @@ class ASDWidget(QWidget):
             cfl_width = fm.horizontalAdvance(cfl_str)
             spd_x = blip_x + fl_width + cfl_width + 20
             painter.drawText(int(spd_x), int(y2 + font_h), spd_str)
-            # 记录速度字段的点击区域
-            spd_width = fm.horizontalAdvance(spd_str)
-            self._label_clickable_areas[track.track_number] = (spd_x, y2, spd_width, font_h)
+            # 记录速度字段的点击区域，使用文本实际边界避免行基线偏移问题
+            spd_rect = fm.boundingRect(spd_str)
+            spd_y = y2 + font_h + spd_rect.top()
+            self._label_clickable_areas[track.track_number] = (spd_x, spd_y, spd_rect.width(), spd_rect.height())
 
             # 第三行: 目的地 + 机型
             y3 = y2 + font_h

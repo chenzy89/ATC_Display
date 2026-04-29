@@ -224,7 +224,7 @@ class GIWWidget(QWidget):
         self.tbx_filter_min.setFont(self.font_btn)
         self.tbx_filter_min.setPlaceholderText("下限")
 
-        self.tbx_filter_max = QLineEdit("10000")
+        self.tbx_filter_max = QLineEdit("6000")
         self.tbx_filter_max.setFixedWidth(60)
         self.tbx_filter_max.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tbx_filter_max.setFont(self.font_btn)
